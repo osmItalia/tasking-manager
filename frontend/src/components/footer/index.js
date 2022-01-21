@@ -61,7 +61,7 @@ export function Footer() {
     return null;
   } else {
     return (
-      <footer className="ph3 ph6-l pb4 white bg-blue-dark">
+      <footer className="ph3 ph6-l pb4 white bg-red-light">
         <div className="footer-ctr-top flex justify-between flex-column flex-row-ns">
           <p className="ma0 f5 f3-ns lh-title">
             <FormattedMessage {...messages.definition} />
