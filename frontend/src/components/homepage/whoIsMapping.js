@@ -34,7 +34,7 @@ function ContactCard() {
 
 export function WhoIsMapping() {
   return (
-    <div className="bg-blue-dark who-is-mapping mb5-m">
+    <div className="bg-red-light who-is-mapping mb5-m">
       <div className="ph6-l ph4 white">
         <div className="w-100">
           <h3 className="bg-red dib fw5 tc lh-copy white ttu barlow-condensed ma0">
