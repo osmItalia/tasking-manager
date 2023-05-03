@@ -1,10 +1,4 @@
-version: "3"
-
 name: tasking-manager-main
-
-volumes:
-  tm_db_data:
-    name: tm-db-data-main
 
 networks:
   tm-net:
@@ -12,14 +6,13 @@ networks:
 
 services:
   tm-db:
-    image: "postgis/postgis:${POSTGIS_TAG:-14-3.3}"
+    image: "mdillon/postgis:11"
     volumes:
-      - tm_db_data:/var/lib/postgresql/data/
-    env_file:
-      - tasking-manager.env
+      - /srv/postgresql:/var/lib/postgresql/data
+    env_file: tasking-manager.env
     restart: unless-stopped
     healthcheck:
-      test: pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+      test: pg_isready -U ${POSTGRES_USER}
       start_period: 35s
       interval: 10s
       timeout: 5s
@@ -28,16 +21,13 @@ services:
       - tm-net
 
   tm-backend:
-    image: ghcr.io/hotosm/tasking-manager/backend:main
-    build:
-      context: .
+    image: ghcr.io/osmitalia/osmit-tm-backend:v4.8
     depends_on:
       tm-db:
         condition: service_healthy
       tm-migration:
         condition: service_completed_successfully
-    env_file:
-      - tasking-manager.env
+    env_file: tasking-manager.env
     restart: unless-stopped
     healthcheck:
       test: curl --fail http://localhost:5000 || exit 1
@@ -55,21 +45,18 @@ services:
           cpus: "1"
           memory: 100M
     labels:
-      - traefik.http.routers.backend.rule=(Host(`127.0.0.1`) || Host(`localhost`)) && PathPrefix(`/api/`)
+      - traefik.http.routers.backend.rule=Host(`osmit-tm4.wmcloud.org`) && PathPrefix(`/api/`)
       - traefik.http.services.backend.loadbalancer.server.port=5000
     networks:
       - tm-net
 
   tm-migration:
-    image: ghcr.io/hotosm/tasking-manager/backend:main
-    build:
-      context: .
+    image: ghcr.io/osmitalia/osmit-tm-backend:v4.8
     entrypoint: ["python", "manage.py", "db", "upgrade"]
     depends_on:
       tm-db:
         condition: service_healthy
-    env_file:
-      - tasking-manager.env
+    env_file: tasking-manager.env
     deploy:
       replicas: ${API_REPLICAS:-1}
       resources:
@@ -108,14 +95,11 @@ services:
       - tm-net
 
   tm-frontend:
-    image: ghcr.io/hotosm/tasking-manager/frontend:main
-    build:
-      context: .
-      dockerfile: "./scripts/docker/Dockerfile.frontend_development"
+    image: ghcr.io/osmitalia/osmit-tm-frontend:v4.8
     env_file:
       - tasking-manager.env
     labels:
-      - traefik.http.routers.frontend.rule=Host(`127.0.0.1`) || Host(`localhost`)
+      - traefik.http.routers.frontend.rule=Host(`osmit-tm4.wmcloud.org`)
       - traefik.http.services.frontend.loadbalancer.server.port=3000
     networks:
       - tm-net

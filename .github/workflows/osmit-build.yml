@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - osm-ita
+    tags:
+      - v*
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@main
+
+      - name: 'Login to GitHub Container Registry'
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
+      - name: Set output
+        id: vars
+        run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+      - name: 'Build Backend Image'
+        env:
+          RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+        run: |
+          docker build . -f Dockerfile --tag ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-backend:$GITHUB_SHA --tag ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-backend:$RELEASE_VERSION
+          docker push ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-backend:$GITHUB_SHA
+          docker push ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-backend:$RELEASE_VERSION
+      - name: 'Build Frontend Image'
+        env:
+          RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+          FRONTEND_ENV: ${{ vars.FRONTEND_ENV }}
+        run: |
+          echo "$FRONTEND_ENV" > tasking-manager.env
+          docker build . -f ./scripts/docker/Dockerfile.frontend --tag ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:$GITHUB_SHA --tag ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:$RELEASE_VERSION
+          docker push ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:$GITHUB_SHA
+          docker push ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:$RELEASE_VERSION
