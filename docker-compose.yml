@@ -2,7 +2,7 @@
 version: "3.4"
 
 x-backend-config: &backend
-  image: hotosm-tasking-manager:backend
+  image: ghcr.io/gisdevio/osmit-tm-backend:latest
   env_file: ${ENV_FILE:-tasking-manager.env}
   depends_on:
     - postgresql
@@ -18,7 +18,7 @@ services:
     container_name: backend
     restart: always
     labels:
-      - traefik.http.routers.backend.rule=Host(`localhost`) && PathPrefix(`/api/`)
+      - traefik.http.routers.backend.rule=Host(`osmit-tm4.wmcloud.org`) && PathPrefix(`/api/`)
       - traefik.http.services.backend.loadbalancer.server.port=5000
 
   migration:
@@ -28,12 +28,12 @@ services:
     command: python manage.py db upgrade
 
   frontend:
-    image: hotosm-tasking-manager:frontend
+    image: ghcr.io/gisdevio/osmit-tm-frontend:latest
     restart: always
     networks:
       - tm-web
     labels:
-      - traefik.http.routers.frontend.rule=Host(`localhost`)
+      - traefik.http.routers.frontend.rule=Host(`osmit-tm4.wmcloud.org`)
       - traefik.http.services.frontend.loadbalancer.server.port=80
 
   postgresql:
@@ -43,6 +43,8 @@ services:
     env_file: ${ENV_FILE:-tasking-manager.env}
     networks:
       - tm-web
+    volumes:
+      - /srv/postgresql:/var/lib/postgresql/data
 
   traefik:
     image: traefik:v2.3

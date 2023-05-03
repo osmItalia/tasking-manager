@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - osm-ita
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@main
+
+      - name: 'Login to GitHub Container Registry'
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
+      - name: 'Build Backend Image'
+        run: |
+          docker build . -f ./scripts/docker/Dockerfile.backend --tag ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-backend:$GITHUB_SHA --tag ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-backend:latest
+          docker push ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-backend:$GITHUB_SHA
+          docker push ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-backend:latest
+      - name: 'Build Frontend Image'
+        run: |
+          cp osmit-frontend.env tasking-manager.env
+          docker build . -f ./scripts/docker/Dockerfile.frontend --tag ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:$GITHUB_SHA --tag ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:latest
+          docker push ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:$GITHUB_SHA
+          docker push ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:latest
+
+ 

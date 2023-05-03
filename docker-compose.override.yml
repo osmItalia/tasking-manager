@@ -12,6 +12,9 @@ services:
     <<: *backend
     volumes:
       - .:/usr/src/app
+    labels:
+      - traefik.http.routers.backend.rule=Host(`localhost`) && PathPrefix(`/api/`)
+      - traefik.http.services.backend.loadbalancer.server.port=5000
 
   # Migration service
   migration:
