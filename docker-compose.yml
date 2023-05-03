@@ -1,23 +1,18 @@
 name: tasking-manager-main
 
-volumes:
-  tm_db_data:
-    name: tm-db-data-main
-
 networks:
   tm-net:
     name: tm-net
 
 services:
   tm-db:
-    image: "postgis/postgis:${POSTGIS_TAG:-14-3.3}"
+    image: "mdillon/postgis:11"
     volumes:
-      - tm_db_data:/var/lib/postgresql/data/
-    env_file:
-      - tasking-manager.env
+      - /srv/postgresql:/var/lib/postgresql/data
+    env_file: tasking-manager.env
     restart: unless-stopped
     healthcheck:
-      test: pg_isready -U ${POSTGRES_USER:-tm} -d ${POSTGRES_DB:-test_db}
+      test: pg_isready -U ${POSTGRES_USER}
       start_period: 35s
       interval: 10s
       timeout: 5s
@@ -26,11 +21,7 @@ services:
       - tm-net
 
   tm-backend:
-    image: ghcr.io/hotosm/tasking-manager/backend:main
-    build:
-      context: .
-      target: ${TARGET_TAG:-debug}
-      dockerfile: ./scripts/docker/Dockerfile
+    image: ghcr.io/osmitalia/osmit-tm-backend:v5.0.6
     depends_on:
       tm-db:
         condition: service_healthy
@@ -38,14 +29,6 @@ services:
         condition: service_completed_successfully
     env_file:
       - tasking-manager.env
-    volumes:
-      - ./pyproject.toml:/usr/src/app/pyproject.toml
-      - ./uv.lock:/usr/src/app/uv.lock
-      - ./backend:/usr/src/app/backend
-      - ./tests:/usr/src/app/tests
-      - ./migrations:/usr/src/app/migrations/
-    ports:
-      - 5678:5678 #DebugPy
     restart: unless-stopped
     healthcheck:
       test: curl --fail http://localhost:5000/api/docs
@@ -63,29 +46,19 @@ services:
           cpus: "1"
           memory: 100M
     labels:
-      - traefik.http.routers.backend.rule=(Host(`127.0.0.1`) || Host(`localhost`)) && PathPrefix(`/api/`)
+      - traefik.http.routers.backend.rule=Host(`osmit-tm4.wmcloud.org`) && PathPrefix(`/api/`)
       - traefik.http.services.backend.loadbalancer.server.port=5000
     networks:
       - tm-net
 
   tm-migration:
-    image: ghcr.io/hotosm/tasking-manager/backend:main
-    build:
-      context: .
-      target: ${TARGET_TAG:-debug}
-      dockerfile: ./scripts/docker/Dockerfile
+    image: ghcr.io/osmitalia/osmit-tm-backend:v5.0.6
     entrypoint: ["alembic", "-c", "migrations/alembic.ini", "upgrade", "head"]
     depends_on:
       tm-db:
         condition: service_healthy
     env_file:
       - tasking-manager.env
-    volumes:
-      - ./pyproject.toml:/usr/src/app/pyproject.toml
-      - ./uv.lock:/usr/src/app/uv.lock
-      - ./backend:/usr/src/app/backend
-      - ./tests:/usr/src/app/tests
-      - ./migrations:/usr/src/app/migrations/
     deploy:
       replicas: ${API_REPLICAS:-1}
       resources:
@@ -99,11 +72,7 @@ services:
       - tm-net
 
   tm-cron-jobs:
-    image: ghcr.io/hotosm/tasking-manager/backend:main
-    build:
-      context: .
-      target: ${TARGET_TAG:-debug}
-      dockerfile: ./scripts/docker/Dockerfile
+    image: ghcr.io/osmitalia/osmit-tm-backend:v5.0.6
     command: ["python", "backend/cron_jobs.py"]
     depends_on:
       tm-db:
@@ -125,21 +94,12 @@ services:
       - tm-net
 
   tm-frontend:
-    # NOTE: For Frontend development with docker-compose
-    # - Uncomment volume section below to enable live reload of frontend code
-    # - Add `TARGET_TAG=debug` to your `tasking-manager.env` or new `.env` file
-    image: ghcr.io/hotosm/tasking-manager/frontend:main
-    build:
-      context: .
-      dockerfile: "./scripts/docker/Dockerfile.frontend"
-      target: ${TARGET_TAG:-prod}
+    image: ghcr.io/osmitalia/osmit-tm-frontend:v5.0.6
     env_file:
       - tasking-manager.env
     labels:
-      - traefik.http.routers.frontend.rule=Host(`127.0.0.1`) || Host(`localhost`)
+      - traefik.http.routers.frontend.rule=Host(`osmit-tm4.wmcloud.org`)
       - traefik.http.services.frontend.loadbalancer.server.port=3000
-    # volumes:
-    #   - ./frontend:/usr/src/app
     networks:
       - tm-net
 
