@@ -1,3 +1,6 @@
+import gevent.monkey
+gevent.monkey.patch_ssl()
+
 import logging
 import os
 from logging.handlers import RotatingFileHandler
