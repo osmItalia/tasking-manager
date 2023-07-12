@@ -41,3 +41,4 @@ jobs:
           docker push ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:$RELEASE_VERSION
 
  
+ 
