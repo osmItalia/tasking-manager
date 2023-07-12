@@ -39,6 +39,4 @@ jobs:
           docker build . -f ./scripts/docker/Dockerfile.frontend --tag ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:$GITHUB_SHA --tag ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:$RELEASE_VERSION
           docker push ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:$GITHUB_SHA
           docker push ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/osmit-tm-frontend:$RELEASE_VERSION
-
- 
  
